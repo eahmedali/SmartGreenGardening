@@ -1,0 +1,40 @@
+Void sendSensorData()
+{
+  // Read soil moisture
+  int soilMoisture = analogRead(SOIL_MOISTURE_PIN);
+  // Map the analog sensor values to a percentage (0-100)
+  int soilMoisturePercentage = map(soilMoisture, 3500, 4095, 100, 0);
+  // Send soil moisture data to Blynk
+  Blynk.virtualWrite(V5, soilMoisturePercentage);
+
+  // Read temperature and humidity from DHT sensor
+  float temperature = dht.readTemperature(); // Read temperature in Celsius
+  float humidity = dht.readHumidity(); // Read humidity
+
+  // Check if temperature and humidity readings are valid
+  if (!isnan(temperature) && !isnan(humidity))
+  {
+    // Send temperature in Celsius and humidity in percentage to Blynk
+    Blynk.virtualWrite(V4, temperature); // Temperature in Celsius
+    Blynk.virtualWrite(V3, humidity); // Humidity in percentage
+
+    // Check if the pump should be on based on manual switch or soil moisture level
+    if (isPumpOn || soilMoisturePercentage < THRESHOLD_MOISTURE)
+    {
+      // Turn on the pump
+      digitalWrite(PUMP_PIN, HIGH);
+      // Check if the pump is turned on automatically (not manually)
+      if (!isPumpOn) {
+        // Send alert notification to Blynk app if the pump is turned on automatically
+        Blynk.logEvent("moisture_alert","Soil moisture is below the threshold!");
+      }
+    }
+    else
+    {
+      // Turn off the pump only if it was not turned on manually
+      if (!isPumpOn) {
+        digitalWrite(PUMP_PIN, LOW);
+      }
+    }
+  }
+}
